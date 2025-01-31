@@ -1,4 +1,10 @@
 # Import Flask modules
+from flask import Flask, render_template, request, redirect, url_for
+app = Flask(__name__)
+@app.route('/')
+def index():
+    return render_template('index.html')
+
 
 
 # Create an object named app
@@ -21,5 +27,18 @@
 # When the user comes directly "/calc" path, "Since this is a GET request, LCM has not been calculated" string returns to them with "result.html" file
 
 
+@app.route('/calc',methods=['GET','POST'])
+def calc():
+    if request.method == 'POST':
+        num1=request.form.get('number1')
+        num2=request.form.get('number2')
+        result=int(num1)*int(num2)
+        return render_template('result.html',a=num1,b=num2,result=result,developer_name="Steve")
+    else:
+        return render_template('result.html',developer_name="Steve")
+
+
 
 # Add a statement to run the Flask application which can be debugged.
+if __name__ == '__main__':
+    app.run(debug=True,port=5002)
