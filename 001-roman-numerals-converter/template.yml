@@ -19,8 +19,10 @@
 #Ensure the template follows best practices and is structured clearly and concisely.
 
 
+
 AWSTemplateFormatVersion: "2010-09-09"
 Description: "CloudFormation template for EC2 instance with security group and user data."
+
 
 Parameters:
   KeyPair:
