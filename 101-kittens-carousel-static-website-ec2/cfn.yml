@@ -56,3 +56,5 @@ Outputs:
   WebSiteUrl:
     Description: Kitten Carroussel 
     Value:  !Join ["", ["http://", Fn::GetAtt WebServer.PublicDnsName]]
+
+
