@@ -26,7 +26,7 @@ Description: "CloudFormation template for EC2 instance with security group and u
 
 Parameters:
   KeyPair:
-    Description: "Key Name for the EC2 instance. Ensure this key exists in your AWS account."
+    Description: "My 1st keypair"
     Type: "AWS::EC2::KeyPair::KeyName"
 
   LatestAmiId:
@@ -68,7 +68,7 @@ Resources:
           yum install pip -y
           pip install flask
           cd /home/ec2-user/
-          FOLDER="https://raw.githubusercontent.com/steveriviere/my-repository/refs/heads/main/001-roman-numerals-converter/"
+          FOLDER="https://raw.githubusercontent.com/steveriviere/my-repository/refs/heads/main/001-roman-numerals-converter"
           wget ${FOLDER}/app.py
           mkdir templates
           cd templates
