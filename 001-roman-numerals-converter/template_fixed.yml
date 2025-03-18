@@ -1,0 +1,89 @@
+
+#Prompt:
+#Create a CloudFormation template for an EC2 instance with the following:
+
+#A description of the instance.
+#A parameter for the Key Pair, including a description and name.
+#A proper Amazon Machine Image (AMI) selection that supports t2.micro using SSM Parameter Store.
+#A security group with:
+#Inbound rules allowing SSH (port 22) and HTTP (port 80).
+#A description and a group name.
+#The EC2 instance should include:
+#A tag with a key-value pair for identification.
+#The correct reference to the Key Pair using !Ref.
+#The AMI ID should be referenced properly using !Ref.
+#The Security Group should be referenced correctly using !GetAtt for the Security Group ID.
+#A UserData section that:
+#Executes commands at instance startup.
+#Supports basic instance setup, including updates, installations, or application deployment.
+#Ensure the template follows best practices and is structured clearly and concisely.
+
+
+
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "CloudFormation template for EC2 instance with security group and user data."
+
+
+Parameters:
+  KeyPair:
+    Description: "My 1st keypair"
+    Type: "AWS::EC2::KeyPair::KeyName"
+
+  LatestAmiId:
+    Type: "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>"
+    Default: "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64"
+
+Resources:
+  EC2SecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "Allow SSH and HTTP access."
+      GroupName: "WebServerSecurityGroup"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  EC2Instance:
+    Type: "AWS::EC2::Instance"
+    Properties:
+      InstanceType: "t2.micro"
+      KeyName: !Ref KeyPair
+      ImageId: !Ref LatestAmiId
+      SecurityGroupIds:
+        - !GetAtt EC2SecurityGroup.GroupId
+      Tags:
+        - Key: "Name"
+          Value: "MyWebServer"
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+          yum install python3 -y
+          yum install pip -y
+          pip install flask
+          cd /home/ec2-user/
+          wget https://raw.githubusercontent.com/steveriviere/my-repository/refs/heads/main/001-roman-numerals-converter/app.py
+          mkdir templates
+          cd templates
+          wget https://raw.githubusercontent.com/steveriviere/my-repository/refs/heads/main/001-roman-numerals-converter/templates/index.html
+          wget https://raw.githubusercontent.com/steveriviere/my-repository/refs/heads/main/001-roman-numerals-converter/templates/result.html
+          cd ..
+          python3 app.py
+
+
+
+
+#### you can use code below to download whole subfolder in a repository
+
+#git clone --no-checkout https://github.com/steveriviere/my-repository/
+#cd my-repository
+#git sparse-checkout init --cone
+#git sparse-checkout set 001-roman-numerals-converter
+#git checkout
+
