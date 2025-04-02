@@ -1,0 +1,179 @@
+Create formation template using following:
+==========================================
+
+for section S3, create a comment to identify section called "S3 section for cloud formation"
+we need logical id and name will be MyS3Bucket
+domain name description would be "domain for static website"
+Default domain name will be "kittens.doriviereboutique.com". note doriviere.com is already created and functionnal
+type s3 bucket
+add parameters hostedzone id
+hostedzone id will reference the hostedzone id
+note that the hostedzone id found with command aws route53 list-hosted-zones is Z0464286270OI1UFMX7IB
+
+
+
+restrict public buckets to false
+bucket name: "String"
+bucket name will reference the domain name
+enable bucketkey enable
+algorithm will be AES
+index document: index.html
+add bucket policy referencing the s3bucket allowing getobject for everyone
+resource is the s3bucket arn
+
+
+for section Outputs, create a comment to identify section called "Section S3 output for cloud formation"
+logical name will be S3WebLink
+description will be "S3 static Website Link"
+retrieve the value of this output
+
+
+for parameters, add hostedzoneid
+then
+
+add route 53 certificate to form cloud formation
+add a comment to start
+this section logical id will be called AWSCertificate
+DomainName reference the domain name of the bucket
+validation method will be DNS
+hostedzone id will reference the hostedzone id
+note that the hostedzone id found with command aws route53 list-hosted-zones is Z0464286270OI1UFMX7IB
+
+
+add cloudfront distribution section
+start with a comment for this section
+distributionconfig is enabled
+origin domainname will be the s3 bucket endpoint or website url by using split "/" (to remove http)
+origin id is "KittensOrigin"
+origin protocol policy http-only
+default cache behavior compress is true
+default cache behavior viewer protocol policy redirect-to-https
+default cache behavior allowed methods GET and HEAD. Do same for cache methods.
+default cache behavior restricted viewer access No
+custom origin same as origin domainname
+priceclass will be PriceClass_100 (north america and europe)
+Aliases to reference domainname
+httpversion http2
+acmcertificatearn reference acmcertificate
+minimum protocol version TLSv1.2_2021
+ssl support method sni-only
+ target origin id is KittensOrigin
+ cachepolicy id  optimized
+
+
+create section RecordSet and call it r3recordset
+include a comment for this section
+Type: RecordSet
+HostedZoneId Reference HostedZoneId
+Name Reference DomainName
+Type is A
+AliasTarget  DNSName: GetAtt cfDistribution.DomainName
+HostedZoneId: Z2FDTNDATAQYW2
+
+
+============
+note, i had to find the hostedzone id using 
+aws route53 list-hosted-zones
+
+=====================================================================================
+
+Suggested Clean Version of the Prompt:
+=====================================================================================
+Create CloudFormation Template for S3 Static Website Hosting with Route 53 and CloudFront
+
+S3 Bucket Section:
+Comment: Add a comment to identify the section as "S3 section for cloud formation".
+
+Logical ID: MyS3Bucket.
+
+Description: "Domain for static website".
+
+Default Domain Name: "kittens.doriviereboutique.com" (Note: doriviereboutique.com is already functional).
+
+Type: AWS::S3::Bucket.
+
+Bucket Name: Reference the domain name (!Ref DomainName).
+
+Restrict Public Buckets: false.
+
+Enable BucketKey: true.
+
+SSE Algorithm: AES256.
+
+Index Document: index.html.
+
+Bucket Policy: Allow s3:GetObject for all users (use !Join to reference the S3 ARN).
+
+
+
+
+Parameters Section:
+Add HostedZoneId Parameter: Reference the HostedZoneId (Z0464286270OI1UFMX7IB) found via aws route53 list-hosted-zones.
+
+
+
+
+Route 53 Certificate Section:
+Comment: Add a comment starting this section.
+
+Logical ID: AWSCertificate.
+
+Domain Name: Reference the domain name of the bucket.
+
+Validation Method: DNS.
+
+Hosted Zone ID: Reference the HostedZoneId parameter.
+
+
+
+
+
+
+CloudFront Distribution Section:
+Comment: Add a comment starting this section.
+
+Enabled: true.
+
+Origin Domain Name: Use the S3 website URL (use !Split to extract the domain from the URL).
+
+Origin ID: KittensOrigin.
+
+Origin Protocol Policy: http-only.
+
+Default Cache Behavior:
+
+Compress: true.
+
+Viewer Protocol Policy: redirect-to-https.
+
+Allowed Methods: GET, HEAD.
+
+Cache Methods: Same as allowed methods.
+
+Restricted Viewer Access: No.
+
+Price Class: PriceClass_100 (North America & Europe).
+
+Aliases: Reference the domain name.
+
+HttpVersion: http2.
+
+ACMCertificateArn: Reference AWSCertificate.
+
+Minimum Protocol Version: TLSv1.2_2021.
+
+SSL Support Method: sni-only.
+
+
+
+
+
+Route 53 Record Set Section:
+Comment: Add a comment starting this section.
+
+Type: A.
+
+Alias Target: Use the CloudFront distribution’s domain name (via !GetAtt).
+
+Hosted Zone ID: Z2FDTNDATAQYW2 (this is for CloudFront, not the S3 zone).
+

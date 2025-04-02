@@ -1,0 +1,112 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  This template sets up an S3 bucket for static website hosting, an ACM certificate, CloudFront distribution, and a Route 53 alias record.
+
+Parameters:
+  # Domain Name parameter for the static website
+  DomainName:
+    Type: String
+    Description: "Domain for static website"
+    Default: "kittens.doriviereboutique.com"
+
+  # Hosted Zone Id for the domain, from Route 53
+  HostedZoneId:
+    Type: String
+    Description: "Route 53 Hosted Zone Id"
+    Default: "Z0464286270OI1UFMX7IB"  # Your Route 53 Hosted Zone ID
+
+Resources:
+
+  # S3 section for CloudFormation
+  MyS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref DomainName
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - BucketKeyEnabled: true
+            ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        # Optionally: Add ErrorDocument, RedirectAllRequestsTo, etc.
+
+  # Bucket Policy to allow public read access for GetObject
+  S3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref MyS3Bucket
+      PolicyDocument:
+        Id: PublicReadPolicy
+        Version: 2012-10-17
+        Statement:
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Join [ '', [ !GetAtt MyS3Bucket.Arn, '/*' ] ]
+
+  # ACM Certificate for the domain
+  AWSCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref DomainName
+      ValidationMethod: DNS
+      DomainValidationOptions: 
+        - DomainName: !Ref DomainName
+          HostedZoneId: !Ref HostedZoneId
+
+  # CloudFront Distribution Section
+  cfDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        HttpVersion: http2
+        IPV6Enabled: false
+        PriceClass: PriceClass_100  # North America and Europe
+        Aliases:
+          - !Ref DomainName
+        ViewerCertificate:
+          AcmCertificateArn: !Ref AWSCertificate
+          MinimumProtocolVersion: TLSv1.2_2021
+          SslSupportMethod: sni-only
+        DefaultRootObject: index.html
+        Origins:
+          - Id: KittensOrigin
+            DomainName: !Select [2, !Split ["/", !GetAtt MyS3Bucket.WebsiteURL]]
+            CustomOriginConfig:
+              OriginProtocolPolicy: http-only
+        DefaultCacheBehavior:
+          TargetOriginId: KittensOrigin
+          Compress: true
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+          CachePolicyId: "658327ea-f89d-4fab-a63d-7e88639e58f6"
+          CachedMethods:
+            - GET
+            - HEAD
+
+  # Route 53 Alias Record to point to CloudFront
+  r3recordset:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt cfDistribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2  # CloudFront Hosted Zone ID
+
+Outputs:
+  # S3 Web Link for the static website
+  S3WebLink:
+    Description: "S3 Static Website Link"
+    Value: !GetAtt MyS3Bucket.WebsiteURL
